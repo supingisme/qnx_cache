@@ -96,17 +96,22 @@ void setEvtCount()
 
 uint64_t getEvtCount(uint64_t index)
 {
+
+	return read_pmevcntrn(index);
+}
+
+uint32_t getEvtOverflow(uint64_t index)
+{
+
     int a = read_sysreg(PMOVSCLR_EL0);
     if(a &(1<<index))
     {
         /* printf("------------------------%llx %llx overflow\n", a, read_sysreg(PMOVSCLR_EL0)); */
         write_sysreg((1<<index), PMOVSCLR_EL0);
-        return (uint64_t)((uint64_t)read_pmevcntrn(index) + (1ULL<<31));
+        return 1;
     }
-    else
         /* printf("------------------------ %llx not overflow\n", a); */
-
-	return read_pmevcntrn(index);
+    return 0;
 }
 
 void disableEvtCounter()

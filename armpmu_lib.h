@@ -265,5 +265,6 @@ void enableEvtCounter();
 void setEvtCount();
 uint64_t getEvtCount(uint64_t index);
 void disableEvtCounter();
+uint32_t getEvtOverflow(uint64_t index);
 
 #endif
