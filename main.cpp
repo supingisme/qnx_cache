@@ -26,7 +26,7 @@ static void * get_over_flow_thread(void* arg)
         for(i = 0; i < 6; i++){
             g_evt_over_flow[i] += getEvtOverflow(i);
         }
-        usleep(200 * 1000);
+        usleep(20 * 1000);
     }
     pthread_exit(NULL);
     return NULL;
@@ -48,28 +48,33 @@ int start_pmu(){
 
 void print_pmu()
 {
-        double ipc_value;
-        uint64_t cpu_cycles, evt_value[6];
+        double ipc_value, cpu_cycles_clock_rate;
+        uint64_t clocks, evt_value[6];
         int n;
 
-        cpu_cycles = getPMUCount();
+        clocks = getPMUCount();
 	    for(n = 0; n<6; n++){
 		    evt_value[n] = getEvtCount(n) + (g_evt_over_flow[n] << 31);
 	    }
-	    ipc_value = (double)evt_value[0]/(double)cpu_cycles ;
-	    printf("\n=======\ncpu cycles: %ld\n",  cpu_cycles);
 
-		printf("inst_retired:      %lld\n", evt_value[0]);
-		printf("l1d cache:         %lld\n",  evt_value[1]);
-		printf("l1d cache refill:  %lld\n",  evt_value[2]);
-		printf("l2d cache:         %lld\n",  evt_value[3]);
-		printf("l2d cache refill:  %lld\n", evt_value[4]);
-		printf("BR miss:           %lld\n", evt_value[5]);
+        /* IPC = INST_RETIRED / CPU_CYCLES */
+	    ipc_value = (double)evt_value[0]/(double)evt_value[1] ;
+	    cpu_cycles_clock_rate = (double)evt_value[1]/(double)clocks;
+	    printf("\n=======\ncpu clocks:%lld  cpu_cycles_clock_rate:%.3f\n",  clocks, cpu_cycles_clock_rate);
 
-	    printf("L1_MISS rate:%.3f \n", (double)evt_value[2]/(double)(evt_value[1]));
-	    printf("L2_MISS rate:%.3f \n", (double)evt_value[4]/(double)(evt_value[3]));
-	    printf("Mispredicted branch:%ld \n", evt_value[5]);
-	    printf("ipc = %.3f\n", ipc_value);
+		printf("inst_retired:       %lld\n", evt_value[0]);
+		printf("cpu cycles:         %lld\n", evt_value[1]);
+		printf("INST_SPEC:          %lld\n", evt_value[2]);
+		printf("BR RETIRED :        %lld\n", evt_value[3]);
+		printf("stall backend:      %lld\n", evt_value[4]);
+		printf("stall frontend:     %lld\n", evt_value[5]);
+
+        /* Speculative  accuracy =  INST_RETIRED / INST_SPEC */
+	    printf("Speculative execution:  %.3f \n", (double)evt_value[2]/(double)(evt_value[0]));
+	    printf("branch inst:            %.3f \n", (double)evt_value[3]/(double)(evt_value[0]));
+	    printf("stall backend:          %.3f \n", (double)evt_value[4]/(double)(evt_value[0]));
+	    printf("stall frontend:         %.3f \n", (double)evt_value[5]/(double)(evt_value[0]));
+	    printf("ipc=                    %.3f\n", ipc_value);
 }
 
 int stop_pmu(){
@@ -83,31 +88,28 @@ int stop_pmu(){
     }
 }
 
-void test1(){
-    uint64_t sum = 0, a = 0, b = 0, c = 0, d = 0, i = 0;
-    sum = 0;a = 0; b = 0; c = 0; d = 0;
-    for (i = 0; i < 0x300000000; i += 4) {
-        /* sum += i; */
-        a += i; b += i; c += i; d += i;
-    }
-    sum = a + b + c +d ;
-}
-
-
+extern void test1();
+extern void test2();
+extern void test3();
+extern void test4();
+extern void test5();
 int main()
 {
 	double seconds; 
 	struct timeval start,end;
+
+    void (*test[])(void) = {test1, test2, test3, test4, test5} ;
     init_pmu();
-        while(1){
+        for(int i=0; i< 5; i++){
         gettimeofday(&start,NULL);
         start_pmu();
-        sleep(1);
+        /* sleep(1); */
+        test[i]();
         print_pmu();
 	    gettimeofday(&end,NULL);
         stop_pmu();
 	    seconds = (end.tv_sec - start.tv_sec)+1.0e-6 * (end.tv_usec - start.tv_usec);
-	    printf("cost:%.3f s\n", seconds);
+	    printf(" test case%d cost:%.3f s\n", i, seconds);
     }
     return 0;
 }
