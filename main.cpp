@@ -59,21 +59,19 @@ void print_pmu()
 
         /* IPC = INST_RETIRED / CPU_CYCLES */
 	    ipc_value = (double)evt_value[0]/(double)evt_value[1] ;
-	    cpu_cycles_clock_rate = (double)evt_value[1]/(double)clocks;
+        cpu_cycles_clock_rate = (double)evt_value[1]/(double)clocks ;
 	    printf("\n=======\ncpu clocks:%lld  cpu_cycles_clock_rate:%.3f\n",  clocks, cpu_cycles_clock_rate);
 
 		printf("inst_retired:       %lld\n", evt_value[0]);
 		printf("cpu cycles:         %lld\n", evt_value[1]);
-		printf("INST_SPEC:          %lld\n", evt_value[2]);
-		printf("BR RETIRED :        %lld\n", evt_value[3]);
-		printf("stall backend:      %lld\n", evt_value[4]);
-		printf("stall frontend:     %lld\n", evt_value[5]);
+		printf("L1D cache:          %lld\n", evt_value[2]);
+		printf("L1D cache miss :    %lld\n", evt_value[3]);
+		printf("L2D cache:          %lld\n", evt_value[4]);
+		printf("L2D cache miss :    %lld\n", evt_value[5]);
 
         /* Speculative  accuracy =  INST_RETIRED / INST_SPEC */
-	    printf("Speculative execution:  %.3f \n", (double)evt_value[2]/(double)(evt_value[0]));
-	    printf("branch inst:            %.3f \n", (double)evt_value[3]/(double)(evt_value[0]));
-	    printf("stall backend:          %.3f \n", (double)evt_value[4]/(double)(evt_value[0]));
-	    printf("stall frontend:         %.3f \n", (double)evt_value[5]/(double)(evt_value[0]));
+	    printf("L1 Miss rate:           %.3f \n", (double)evt_value[3]/(double)(evt_value[2]));
+	    printf("L2 Miss rate:           %.3f \n", (double)evt_value[5]/(double)(evt_value[4]));
 	    printf("ipc=                    %.3f\n", ipc_value);
 }
 
@@ -93,24 +91,63 @@ extern void test2();
 extern void test3();
 extern void test4();
 extern void test5();
-int main()
-{
+
+void roworder( int * A, int x, int y) {
+    int row, col;
+    for (row=0; row<x; row++) {
+        for (col=0; col< y; col++) {
+	    A[row*y + col] = 0;
+        }
+    }
+}
+
+
+void colorder( int * A, int x, int y) {
+    int row, col;
+    for (col=0; col< y; col++) {
+        for (row=0; row<x; row++) {
+	    A[row*y + col] = 0;
+        }
+    }
+}
+
+int main(int argc, char **argv) {
+
 	double seconds; 
 	struct timeval start,end;
 
+    int i, x=1024, y=1024;
+    int length = 64 * 1024 * 1024; 
+    int * arr = (int *)malloc(length*sizeof(int));  
+    for(i = 0; i< length; i++)
+        arr[i] = rand();
+     
+    if (argc==3) {
+	x=atoi(argv[1]);
+	y=atoi(argv[2]);
+    }
+
     void (*test[])(void) = {test1, test2, test3, test4, test5} ;
     init_pmu();
-        for(int i=0; i< 5; i++){
+    do{
+
+        for(i=0; i< 2; i++){
         gettimeofday(&start,NULL);
         start_pmu();
         /* sleep(1); */
-        test[i]();
+        /* test[i](); */
+            if(i == 0) colorder(arr, x, y);
+            if(i == 1) roworder(arr, x, y);
         print_pmu();
 	    gettimeofday(&end,NULL);
         stop_pmu();
 	    seconds = (end.tv_sec - start.tv_sec)+1.0e-6 * (end.tv_usec - start.tv_usec);
-	    printf(" test case%d cost:%.3f s\n", i, seconds);
-    }
+	    /* printf(" test case%d cost:%.3f s\n", i, seconds); */
+	    printf("i=%d, x = %d, y = %d cost:%.3f s\n",i,x,y,  seconds);
+        }
+        x *= 2; 
+        y *= 2;
+    }while(!(x*y > length));
     return 0;
 }
 

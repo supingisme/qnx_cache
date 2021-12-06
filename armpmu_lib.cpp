@@ -86,10 +86,10 @@ void setEvtCount()
 
     	write_pmevtypern(0, ARMV8_PMUV3_PERFCTR_INST_RETIRED);
     	write_pmevtypern(1, ARMV8_PMUV3_PERFCTR_CPU_CYCLES);
-    	write_pmevtypern(2, ARMV8_PMUV3_PERFCTR_INST_SPEC);
-		write_pmevtypern(3, ARMV8_PMUV3_PERFCTR_BR_RETIRED);
-    	write_pmevtypern(4, ARMV8_PMUV3_PERFCTR_STALL_BACKEND);
-    	write_pmevtypern(5, ARMV8_PMUV3_PERFCTR_STALL_FRONTEND);
+    	write_pmevtypern(2, ARMV8_PMUV3_PERFCTR_L1D_CACHE);
+		write_pmevtypern(3, ARMV8_PMUV3_PERFCTR_L1D_CACHE_REFILL);
+    	write_pmevtypern(4, ARMV8_PMUV3_PERFCTR_L2D_CACHE);
+    	write_pmevtypern(5, ARMV8_PMUV3_PERFCTR_L2D_CACHE_REFILL);
 
 	for(i=0; i<6; i++){
 		write_pmevcntrn(i, 0);
