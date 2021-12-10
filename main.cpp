@@ -91,6 +91,12 @@ extern void test2();
 extern void test3();
 extern void test4();
 extern void test5();
+extern void multMat1(int n, float *A,float *B,float *C);
+extern void multMat2(int n, float *A,float *B,float *C);
+extern void multMat3(int n, float *A,float *B,float *C);
+extern void multMat4(int n, float *A,float *B,float *C);
+extern void multMat5(int n, float *A,float *B,float *C);
+extern void multMat6(int n, float *A,float *B,float *C);
 
 void roworder( int * A, int x, int y) {
     int row, col;
@@ -116,38 +122,49 @@ int main(int argc, char **argv) {
 	double seconds; 
 	struct timeval start,end;
 
-    int i, x=1024, y=1024;
-    int length = 64 * 1024 * 1024; 
-    int * arr = (int *)malloc(length*sizeof(int));  
-    for(i = 0; i< length; i++)
-        arr[i] = rand();
+    /* int i, x=1024, y=1024; */
+    /* int length = 64 * 1024 * 1024; */ 
+    /* int * arr = (int *)malloc(length*sizeof(int)); */  
+    /* for(i = 0; i< length; i++) */
+    /*     arr[i] = rand(); */
      
-    if (argc==3) {
-	x=atoi(argv[1]);
-	y=atoi(argv[2]);
+    /* if (argc==3) { */
+	/* x=atoi(argv[1]); */
+	/* y=atoi(argv[2]); */
+    /* } */
+    int i, nmax = 1024;
+    if (argc==2) {
+	nmax=atoi(argv[1]);
     }
+
+	//函数指针数组，存放6个函数指针，分别对应着按照6种不同的顺序执行矩阵相乘的函数
+	void (*orderings[])(int,float *,float *,float *)
+	= {&multMat1,&multMat2,&multMat3,&multMat4,&multMat5,&multMat6};
+	
+	char *names[] = {"ijk","ikj","jik","jki","kij","kji"};
+	
+	//声明了三个浮点类型指针变量A,B,C
+	float *A = (float *)malloc(nmax*nmax * sizeof(float));
+	float *B = (float *)malloc(nmax*nmax * sizeof(float));
+	float *C = (float *)malloc(nmax*nmax * sizeof(float));
 
     void (*test[])(void) = {test1, test2, test3, test4, test5} ;
     init_pmu();
-    do{
-
-        for(i=0; i< 2; i++){
+        for(i=0; i< 6; i++){
         gettimeofday(&start,NULL);
         start_pmu();
         /* sleep(1); */
         /* test[i](); */
-            if(i == 0) colorder(arr, x, y);
-            if(i == 1) roworder(arr, x, y);
+            /* if(i == 0) colorder(arr, x, y); */
+            /* if(i == 1) roworder(arr, x, y); */
+		(*orderings[i])(nmax,A,B,C);
         print_pmu();
 	    gettimeofday(&end,NULL);
         stop_pmu();
 	    seconds = (end.tv_sec - start.tv_sec)+1.0e-6 * (end.tv_usec - start.tv_usec);
 	    /* printf(" test case%d cost:%.3f s\n", i, seconds); */
-	    printf("i=%d, x = %d, y = %d cost:%.3f s\n",i,x,y,  seconds);
+	    printf("%s\t row or col = %d bytes cost:%.3f s\n",names[i], nmax*sizeof(float),  seconds);
         }
-        x *= 2; 
-        y *= 2;
-    }while(!(x*y > length));
     return 0;
 }
 
